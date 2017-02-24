@@ -34,7 +34,11 @@ io.on('connection', function(socket){
         }
     }
 
-    var broadcastToScene = function (evtName, data) {
+    var broadcastToScene = function (evtName, data, remoteSocketId) {
+        if (!data) {
+            data = {};
+        }
+        data.socketId = remoteSocketId;
         io.to(SCENES_ROOM).emit(evtName, data);
     }
 
@@ -49,7 +53,7 @@ io.on('connection', function(socket){
         console.log('remote:connected');
         sockets.remoteId = socket.id;
         daydreamState.remoteConnected = true;
-        broadcastToScene('remote:connected', daydreamState)
+        broadcastToScene('remote:connected', daydreamState, socket.id)
     }
 
     // welcome the new connection with the current state
@@ -62,7 +66,7 @@ io.on('connection', function(socket){
             console.log('remote:disconnected');
             sockets.remoteId = null;
             daydreamState.remoteConnected = false;
-            broadcastToScene('remote:disconnected', daydreamState)
+            broadcastToScene('remote:disconnected', daydreamState, socket.id)
         } else if (socket.id == sockets.sceneId) {
             console.log('scene:disconnected');
             sockets.sceneId = null;
@@ -74,40 +78,34 @@ io.on('connection', function(socket){
     // REMOTE EVENTS
 
     socket.on('motion:change', function (data) {
-        broadcastToScene('motion:change', data);
+        broadcastToScene('motion:change', data, socket.id);
     });
     socket.on('orientation:change', function (data) {
-        broadcastToScene('orientation:change', data);
+        broadcastToScene('orientation:change', data, socket.id);
     });
     socket.on('trackpad:touchstart', function (data) {
-        broadcastToScene('trackpad:touchstart', data);
+        broadcastToScene('trackpad:touchstart', data, socket.id);
     });
     socket.on('trackpad:touchmove', function (data) {
-        broadcastToScene('trackpad:touchmove', data);
+        broadcastToScene('trackpad:touchmove', data, socket.id);
     });
     socket.on('trackpad:touchend', function (data) {
-        broadcastToScene('trackpad:touchend', data);
+        broadcastToScene('trackpad:touchend', data, socket.id);
     });
     socket.on('trackpad:click', function (data) {
-        broadcastToScene('trackpad:click', data);
+        broadcastToScene('trackpad:click', data, socket.id);
     });
     socket.on('trackpad:swipeleft', function (data) {
-        broadcastToScene('trackpad:swipeleft', data);
+        broadcastToScene('trackpad:swipeleft', data, socket.id);
     });
     socket.on('trackpad:swiperight', function (data) {
-        broadcastToScene('trackpad:swiperight', data);
+        broadcastToScene('trackpad:swiperight', data, socket.id);
     });
     socket.on('trackpad:swipeup', function (data) {
-        broadcastToScene('trackpad:swipeup', data);
+        broadcastToScene('trackpad:swipeup', data, socket.id);
     });
     socket.on('trackpad:swipedown', function (data) {
-        broadcastToScene('trackpad:swipedown', data);
-    });
-    socket.on('home:tap', function (data) {
-        broadcastToScene('home:tap', data);
-    });
-    socket.on('app:tap', function (data) {
-        broadcastToScene('app:tap', data);
+        broadcastToScene('trackpad:swipedown', data, socket.id);
     });
 });
 

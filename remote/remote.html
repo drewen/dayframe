@@ -52,28 +52,6 @@
             #trackpad:active {
                 background-image:  radial-gradient(160px, blue 0%, #DDD 80%);
             }
-            #app-button {
-                margin-top: 30px;
-                width: 80px;
-                height: 80px;
-                border-radius: 40px;
-                background-image:  radial-gradient(80px, #FFF 0%, #DDD 80%);
-                border: 1px solid #bbb;
-            }
-            #app-button:active {
-                background-image:  radial-gradient(80px, blue 0%, #DDD 80%);
-            }
-            #home-button {
-                margin-top: 30px;
-                width: 80px;
-                height: 80px;
-                border-radius: 40px;
-                background-image:  radial-gradient(80px, #FFF 0%, #DDD 80%);
-                border: 1px solid #bbb;
-            }
-            #home-button:active {
-                background-image:  radial-gradient(80px, blue 0%, #DDD 80%);
-            }
             #trackpad-contact-point {
                 position: absolute;
                 width: 32px;
@@ -95,8 +73,6 @@
             <div id="trackpad">
                 <div id="trackpad-contact-point" class="hidden"></div>
             </div>
-            <div id="app-button"></div>
-            <div id="home-button"></div>
         </div>
         <script>
 
@@ -111,15 +87,11 @@
             var trackpadEl = document.querySelector('#trackpad');
             var trackpadContactEl = document.querySelector('#trackpad-contact-point');
             var connectionEl = document.querySelector('#connection-status');
-            var homeBtnEl = document.querySelector('#home-button');
-            var appBtnEl = document.querySelector('#app-button');
 
             /**
              * Create Hammer objects for gesture detection
              */
             var trackpadHammer = new Hammer(trackpadEl);
-            var homeBtnHammer = new Hammer(homeBtnEl);
-            var appBtnHammer = new Hammer(appBtnEl);
 
             /**
              * Handlers
@@ -254,13 +226,6 @@
             trackpadHammer.on('swipedown', function (evt) {
                 console.log('swipedown');
                 socket.emit('trackpad:swipedown');
-            });
-            homeBtnHammer.on('tap', function (evt) {
-                socket.emit('home:tap');
-                orientationCenter = lastOrientation;
-            });
-            appBtnHammer.on('tap', function (evt) {
-                socket.emit('app:tap');
             });
         </script>
     </body>

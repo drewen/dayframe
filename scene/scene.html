@@ -18,15 +18,6 @@
     <body>
         <a-scene antialias="true" id="scene">
             <a-box id="laserpointer" visible="true" position="0 0 0" width="0.1" depth="0.1" height="0.1"></a-box>
-            <a-entity position="0 0 0" id="remote">
-                <a-entity id="brush" raycaster="objects: .drawable; far: 15" position="0 0 0" rotation="0 0 0"></a-entity>
-                <a-box id="body" position="0 0 0" rotation="0 0 0" width="1" height="0.1" depth="2"  color="#4CC3D9"></a-box>
-                <a-box id="touchpad" position="0 .05 -.5" rotation="0 0 0" width="0.75" height="0.1" depth="0.75" color="#0000FF">
-                    <a-sphere id="touchpad-contact" visible="false" position="0 0.05 0" radius="0.05" color="pink"></sphere>
-                </a-box>
-                <a-box id="app-btn" position="0 .05 .2" rotation="0 0 0" width="0.4" height="0.1" depth="0.4"  color="#0000FF"></a-box>
-                <a-box id="home-btn" position="0 .05 .7" rotation="0 0 0" width="0.4" height="0.1" depth="0.4"  color="#0000FF"></a-box>
-            </a-entity>
             <a-entity position="0 2 -5" id="canvas" class="drawable">
                 <a-plane width="16" height="10" color="darkgrey"></a-plane>
             </a-entity>
@@ -37,11 +28,52 @@
         </a-scene>
         <script>
             var socket = io.connect('', { query: 'type=scene' });
-            var remote = document.querySelector('#remote');
-            var touchpadObj = document.querySelector('#touchpad');
-            var touchpadContactObj = document.querySelector('#touchpad-contact');
-            var appBtnObj = document.querySelector('#app-btn');
-            var homeBtnObj = document.querySelector('#home-btn');
+
+            function createRemote(socketId) {
+                var remote = document.createElement('a-entity');
+                remote.setAttribute('position', '0 0 0');
+                remote.setAttribute('id', 'remote-' + socketId);
+
+                var raycaster = document.createElement('a-entity');
+                raycaster.setAttribute('raycaster', 'objects: .drawable; far: 15');
+                raycaster.setAttribute('position', '0 0 0');
+                raycaster.setAttribute('rotations', '0 0 0');
+
+                var remoteBody = document.createElement('a-box');
+                remoteBody.setAttribute('width', '1');
+                remoteBody.setAttribute('height', '0.1');
+                remoteBody.setAttribute('depth', '2');
+                remoteBody.setAttribute('color', '#4CC3D9');
+                remoteBody.setAttribute('position', '0 0 0');
+                remoteBody.setAttribute('rotations', '0 0 0');
+
+                var touchpad = document.createElement('a-box');
+                touchpad.setAttribute('width', '0.75');
+                touchpad.setAttribute('height', '0.1');
+                touchpad.setAttribute('depth', '0.75');
+                touchpad.setAttribute('color', '#0000FF');
+                touchpad.setAttribute('position', '0 .05 -.5');
+                touchpad.setAttribute('rotations', '0 0 0');
+
+                var touchpadContact = document.createElement('a-sphere');
+                touchpadContact.setAttribute('id', 'touchpad-contact-' + socketId);
+                touchpadContact.setAttribute('visible', 'false');
+                touchpadContact.setAttribute('color', 'pink');
+                touchpadContact.setAttribute('position', '0 0.05 0');
+                touchpadContact.setAttribute('radius', '0.05');
+                touchpad.appendChild(touchpadContact);
+
+                remote.appendChild(remoteBody);
+                remote.appendChild(raycaster);
+                remote.appendChild(touchpad);
+
+                document.querySelector('#scene').appendChild(remote);
+            }
+
+            function destroyRemote(socketId) {
+                var remote = document.querySelector('#remote-' + socketId);
+                remote.parentElement.removeChild(remote);
+            }
 
             // connection events
             socket.on('connect', function () {
@@ -50,40 +82,35 @@
             socket.on('disconnect', function () {
                 console.log('disconnected as scene');
             });
-            socket.on('remote:connected', function () {
+            socket.on('remote:connected', function (data) {
+                createRemote(data.socketId);
                 console.log('remote:connected');
             });
-            socket.on('remote:disconnected', function () {
+            socket.on('remote:disconnected', function (data) {
+                destroyRemote(data.socketId);
                 console.log('remote:disconnected');
             });
 
             // orientation events
-            socket.on('orientation:change', function (evt) {
-                remote.setAttribute('rotation', evt);
+            socket.on('orientation:change', function (data) {
+                var remote = document.querySelector('#remote-' + data.socketId);
+                remote.setAttribute('rotation', {x: data.x, y: data.y, z: data.z});
 
                 // calculate the x_offset of the remote
                 // the y rotation determines the offset on the x axis
                 var shifted_y_rotation;
-                if (evt.y >= 0 && evt.y < 180) {
+                if (data.y >= 0 && data.y < 180) {
                     // to the left: 0 is center and 180 is extreme left
                     // shift to: 0 is center and -180 is extreme left
-                    shifted_y_rotation = evt.y * -1;
-                } else if (evt.y >= 180 && evt.y <= 360) {
+                    shifted_y_rotation = data.y * -1;
+                } else if (data.y >= 180 && data.y <= 360) {
                     // to the right: 360 is center and 180 is extreme right
                     // shift to: 0 is center and +180 is extreme left
-                    shifted_y_rotation = (evt.y-180) * -1 + 180;
+                    shifted_y_rotation = (data.y-180) * -1 + 180;
                 }
                 var scaled_y_rotation = shifted_y_rotation / 45;
                 if (scaled_y_rotation > 1) scaled_y_rotation = 1;
                 var x_offset = scaled_y_rotation * 1.5;
-
-                // calculate the y_offset of the remote
-                // the x rotation determines the offset on the y axis
-                // thankfully, x already seems to face straight forward
-                // var scaled_x_rotation = evt.x / 45;
-                // if (scaled_x_rotation > 1) scaled_x_rotation = 1;
-                // var y_offset = scaled_x_rotation * 0.7; // until corrected
-                // console.log(y_offset);
 
                 remote.setAttribute('position', x_offset+' 0 0');
             });
@@ -93,19 +120,17 @@
             var scene = document.querySelector('#scene');
             var laserpointer = document.querySelector('#laserpointer');
             var canvas = document.querySelector('#canvas');
-            var brush = document.querySelector('#brush');
             var now = new Date().getTime();
             canvas.addEventListener('raycaster-intersected', function (evt) {
-                laserpointer.setAttribute('position',evt.detail.intersection.point);
+                laserpointer.setAttribute('position', evt.detail.intersection.point);
                 if (!shouldDrawShit) return;
                 var dot = document.createElement('a-sphere');
                 var newNow = new Date().getTime();
-                // console.log('delay',now-newNow);
                 now = newNow;
                 var delay = 10000;
                 dot.setAttribute('position', evt.detail.intersection.point);
                 dot.setAttribute('scale', '0.1 0.1 0.1');
-                dot.setAttribute('color', trackpadColors[trackpadColorIndex]);
+                dot.setAttribute('color', 'white');
                 new AFRAME.TWEEN.Tween({z: 0.0})
                     .to({ z: -0.001 },delay)
                     .easing(AFRAME.TWEEN.Easing.Quadratic.Out)
@@ -128,12 +153,14 @@
                 shitNumber++;
             })
             // track pad events
-            socket.on('trackpad:touchstart', function () {
+            socket.on('trackpad:touchstart', function (data) {
+                var touchpadContactObj = document.querySelector('#touchpad-contact-' + data.socketId);
                 laserpointer.setAttribute('visible', false);
                 touchpadContactObj.setAttribute('visible',true);
                 shouldDrawShit = true;
             })
-            socket.on('trackpad:touchmove', function (evt) {
+            socket.on('trackpad:touchmove', function (data) {
+                var touchpadContactObj = document.querySelector('#touchpad-contact-' + data.socketId);
                 var touchpadWidth = 0.75;
                 var touchpadDepth = 0.75;
                 var touchpad_y = 0.05;
@@ -141,35 +168,12 @@
                 var touchpad_z = evt.y * touchpadDepth - touchpadDepth/2;
                 touchpadContactObj.setAttribute('position',touchpad_x+' '+touchpad_y+' '+touchpad_z);
             })
-            socket.on('trackpad:touchend', function () {
+            socket.on('trackpad:touchend', function (data) {
+                var touchpadContactObj = document.querySelector('#touchpad-contact-' + data.socketId);
                 laserpointer.setAttribute('visible', true);
                 touchpadContactObj.setAttribute('visible',false);
                 shouldDrawShit = false;
             })
-            var trackpadColors = ['pink','orange','blue','yellow','green'];
-            var trackpadColorIndex = 0;
-            touchpadObj.setAttribute('color', trackpadColors[trackpadColorIndex]);
-            socket.on('trackpad:click', function () {
-                trackpadColorIndex++;
-                touchpadObj.setAttribute('color', trackpadColors[trackpadColorIndex]);
-                if (trackpadColorIndex > trackpadColors.length-1) trackpadColorIndex = 0;
-            });
-
-            // other buttons
-            var appBtnColors = ['pink','orange','blue','yellow','green'];
-            var appBtnColorIndex = 0;
-            socket.on('app:tap', function () {
-                appBtnObj.setAttribute('color', appBtnColors[appBtnColorIndex]);
-                appBtnColorIndex++;
-                if (appBtnColorIndex > appBtnColors.length-1) appBtnColorIndex = 0;
-            });
-            var homeBtnColors = ['pink','orange','blue','yellow','green'];
-            var homeBtnColorIndex = 0;
-            socket.on('home:tap', function () {
-                homeBtnObj.setAttribute('color', homeBtnColors[homeBtnColorIndex]);
-                homeBtnColorIndex++;
-                if (homeBtnColorIndex > homeBtnColors.length-1) homeBtnColorIndex = 0;
-            });
         </script>
     </body>
 </html>

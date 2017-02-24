@@ -12,7 +12,7 @@ Steps to view the live demo:
 1. Go to this URL on your computer: https://dayframe-demo.herokuapp.com/scene
 2. Go to this URL with your smartphone: https://dayframe-demo.herokuapp.com/remote
 
-Note: only one person at a time can control the remote. If you join, you will disconnect the previously connected remote.
+Note: a remote is created for each new person who joins the remote page
 
 # Usage
 
@@ -55,5 +55,3 @@ These are a list of events you can listen for in your scene. The events can be s
 + `trackpad:touchmove` - when the user's finger moves on the trackpad, provides the `{x, y}` coordinates of the current finger position as percentages.
 + `trackpad:touchend` - when the user's finger leaves the trackpad
 + `trackpad:click` - as per the official Daydream remote emulator, the click is triggered by a double tap on the trackpad.
-+ `app:tap` - a tap of the app button
-+ `home:tap` - a tap of the home button
